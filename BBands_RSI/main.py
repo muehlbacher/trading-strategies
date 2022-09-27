@@ -23,18 +23,24 @@ from ta.momentum import RSIIndicator
 trading_pair = 'BTCUSD'
 exchange = 'FTXU'
 one_year_ago = datetime.now() - relativedelta(years=1)
-start_date = str(one_year_ago.date())
+half_a_year_ago = datetime.now() - relativedelta(month = 6)
+two_weaks_ago = datetime.now() - relativedelta(weeks = 2)
+#start_date = str(half_a_year_ago.date())
+#start_date = str(one_year_ago.date())
+start_date = "2022-03-26"
+#end_date_test = "2022-03-20"
 today = date.today()
 today = today.strftime("%Y-%m-%d")
 rsi_upper_bound = 70
 rsi_lower_bound = 30
-bollinger_window = 20
+bollinger_window = 90
 waitTime = 3600 # Wait time between each bar request -> 1 hour (3600 seconds)
 percent_trade = 0.2
 bar_data = 0
 latest_bar_data = 0
 btc_position = 0
 usd_position = 0
+starting_portfolio = 1000.0
 
 # ENABLE LOGGING - options, DEBUG,INFO, WARNING?
 logging.basicConfig(level=logging.INFO,
@@ -61,7 +67,7 @@ async def get_crypto_bar_data(trading_pair, start_date, end_date, exchange):
    try:
 
        bars = client.get_crypto_bars(
-           trading_pair, TimeFrame.Hour, start=start_date, end=end_date, limit=10000, exchanges=exchange).df
+           trading_pair, TimeFrame.Minute, start=start_date, end=end_date, limit=10000, exchanges=exchange).df
 
        bars = bars.drop(
            columns=["trade_count", "exchange"], axis=1)
@@ -278,16 +284,16 @@ async def backtest_returns():
 
    cerebro = bt.Cerebro()
    data = btfeeds.GenericCSVData(
-       dataname='bar_data.csv',
+       dataname='bar_data_faulty.csv',
 
-       fromdate=datetime(2021, 7, 9, 0, 0, 0, 0),
+       fromdate=datetime(2022, 1, 1, 0, 0, 0, 0),
        todate=datetime(2022, 7, 8, 0, 0, 0, 0),
 
        nullvalue=0.0,
 
        dtformat=('%Y-%m-%d %H:%M:%S%z'),
        timeframe=bt.TimeFrame.Minutes,
-       compression=60,
+       compression=1,
        datetime=12,
        high=1,
        low=2,
@@ -299,13 +305,15 @@ async def backtest_returns():
        bb_hi=10,
        bb_li=11
    )
-   cerebro.broker.set_cash(100000.0)
+   cerebro.broker.set_cash(starting_portfolio)
    cerebro.addsizer(bt.sizers.PercentSizer, percents=20)
    cerebro.adddata(data)
    cerebro.addstrategy(BB_RSI_Strategy)
    print("Starting Portfolio Value: ${}".format(cerebro.broker.getvalue()))
 
    cerebro.run()
+
+    
 
    print("Final Portfolio Value: ${}".format(cerebro.broker.getvalue()))
 
@@ -329,7 +337,7 @@ async def main():
    # Get the historical data from Alpaca for backtesting
    await get_crypto_bar_data(trading_pair, start_date, today, exchange)
    # Add bar_data to a CSV for backtrader
-   bar_data.to_csv('bar_data.csv', index=False)
+   bar_data.to_csv('bar_data_faulty_20.csv', index=False)
    # Create and run a Backtest instance
    await backtest_returns()
 
